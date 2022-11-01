@@ -2,6 +2,8 @@
 
 namespace App\Entities;
 
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
@@ -15,6 +17,11 @@ class User implements UserInterface
 
     #[ORM\Column(type: Types::STRING, nullable: true)]
     private ?string $password = null;
+
+    public function __construct(
+        #[ORM\OneToMany(mappedBy: 'createdBy', targetEntity: Message::class)]
+        private readonly Collection $messages = new ArrayCollection()
+    ){}
 
     public function getAuthIdentifierName(): string
     {
@@ -64,5 +71,31 @@ class User implements UserInterface
     public function setPassword(?string $password): void
     {
         $this->password = $password;
+    }
+
+    public function getMessages(): Collection
+    {
+        return $this->messages;
+    }
+
+    public function hasMessage(MessageInterface $message): bool
+    {
+        return $this->messages->contains($message);
+    }
+
+    public function addMessage(MessageInterface $message): void
+    {
+        if (!$this->hasMessage($message)) {
+            $this->messages->add($message);
+            $message->setCreatedBy($this);
+        }
+    }
+
+    public function removeMessage(MessageInterface $message): void
+    {
+        if ($this->hasMessage($message)) {
+            $this->messages->removeElement($message);
+            $message->setCreatedBy(null);
+        }
     }
 }
